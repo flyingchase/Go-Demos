@@ -1,6 +1,8 @@
 package lru
 
-import "container/list"
+import (
+	"container/list"
+)
 
 type (
 	Cache struct {
@@ -87,4 +89,104 @@ func (c *Cache) Add(key string, value Value) {
 // 添加数据的数量
 func (c *Cache) Len() int {
 	return c.ll.Len()
+}
+
+// vim 测试
+func quicksort(nums []int) {
+	if len(nums) == 0 {
+		return
+	}
+	quicksorthelper(nums, 0, len(nums)-1)
+
+}
+func quicksorthelper(nums []int, l int, r int) {
+	if l < r {
+		p := paratition(nums, l, r)
+		quicksorthelper(nums, l, p[0]-1)
+		quicksorthelper(nums, p[1]+1, r)
+	}
+}
+func paratition(nums []int, l, r int) []int {
+	less, more := l-1, r
+	for l < more {
+		if nums[l] < nums[r] {
+			less++
+			nums[less], nums[l] = nums[l], nums[less]
+			l++
+		} else if nums[l] > nums[r] {
+			more--
+			nums[l], nums[more] = nums[more], nums[l]
+		} else {
+			l++
+		}
+	}
+	nums[more], nums[r] = nums[r], nums[more]
+	return []int{less + 1, more}
+}
+func mergesort(nums []int) {
+	if len(nums) == 0 {
+		return
+	}
+	mergesortHelper(nums, 0, len(nums)-1)
+}
+func mergesortHelper(nums []int, l, r int) {
+	if l >= r {
+		return
+	}
+	mid := l + (r-l)>>1
+	mergesortHelper(nums, l, mid)
+	mergesortHelper(nums, mid+1, r)
+	merge(nums, l, mid, r)
+}
+func merge(nums []int, l, mid, r int) {
+	p1, p2, i, helper := l, mid, 0, make([]int, r-l+1)
+	for p1 <= mid && p2 <= r {
+		if nums[p1] < nums[p2] {
+			helper[i] = nums[p1]
+			p1++
+		} else {
+			helper[i] = nums[p2]
+			p2++
+		}
+		i++
+	}
+	copy(helper[i:], nums[p1:mid])
+	copy(helper[i:], nums[p2:])
+	copy(nums, helper)
+}
+
+type TreeNode struct {
+	Left  *TreeNode
+	Right *TreeNode
+	Value int
+}
+
+func zigzaLevelTraversalBT(root *TreeNode) [][]int {
+	res := make([][]int, 0)
+	cur := root
+	queue := make([]*TreeNode, 0)
+	queue = append(queue, cur)
+	flag := false
+	for len(queue) > 0 {
+		size := len(queue)
+		lists := make([]int, 0)
+		for size > 0 {
+			size--
+			lists = append(lists, cur.Value)
+			if cur.Left != nil {
+				queue = append(queue, cur.Left)
+			}
+			if cur.Right != nil {
+				queue = append(queue, cur.Right)
+			}
+		}
+		if !flag {
+			for i, j := 0, len(lists)-1; i < j; i, j = i+1, j-1 {
+				lists[i], lists[j] = lists[j], lists[i]
+			}
+		}
+		flag=!flag
+		res = append(res, lists)
+	}
+	return res
 }
