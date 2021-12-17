@@ -30,4 +30,3 @@ func (c *cache) get(key string) (value ByteView, ok bool) {
 	}
 	return
 }
-
