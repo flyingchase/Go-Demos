@@ -21,6 +21,8 @@ func (p *HTTPPool) Log(format string, v ...interface{}) {
 	log.Printf("[Server %s] %s", p.self, fmt.Sprintf(format, v...))
 }
 func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// 判断是否是正确网址
+	// 含有前缀_geecache
 	if !strings.HasPrefix(r.URL.Path, p.basePth) {
 		panic("HTTPPool serving unexpected path: " + r.URL.Path)
 	}

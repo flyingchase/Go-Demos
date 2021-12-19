@@ -36,8 +36,6 @@ func New(maxBytes int64, onEvicted func(string, Value)) *Cache {
 }
 
 // Get 从字典从查找对应的双向链表的结点，再移动到队首
-/*
- */
 func (c *Cache) Get(key string) (value Value, ok bool) {
 	if ele, ok := c.cache[key]; ok {
 		// 移动到队首（约定 front 为队首）
@@ -185,7 +183,7 @@ func zigzaLevelTraversalBT(root *TreeNode) [][]int {
 				lists[i], lists[j] = lists[j], lists[i]
 			}
 		}
-		flag=!flag
+		flag = !flag
 		res = append(res, lists)
 	}
 	return res
