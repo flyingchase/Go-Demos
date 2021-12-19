@@ -25,6 +25,7 @@ func New(replicas int, fn Hash) *Map {
 		replicas: replicas,
 		hashMap:  make(map[int]string),
 	}
+	// 默认为 crc32.ChecksumIEEE 算法
 	if m.hash == nil {
 		m.hash = crc32.ChecksumIEEE
 	}
@@ -34,11 +35,14 @@ func New(replicas int, fn Hash) *Map {
 func (m *Map) Add(keys ...string) {
 	for _, key := range keys {
 		for i := 0; i < m.replicas; i++ {
+			// 通过添加编号区分不同的虚拟节点
+			// 虚拟节点名称 strconv.Itoa(i)+key
 			hash := int(m.hash([]byte(strconv.Itoa(i) + key)))
 			m.keys = append(m.keys, hash)
 			m.hashMap[hash] = key
 		}
 	}
+	// 环上 hash 值排序
 	sort.Ints(m.keys)
 }
 
@@ -47,8 +51,11 @@ func (m *Map) Get(key string) string {
 		return ""
 	}
 	hash := int(m.hash([]byte(key)))
+	// 顺时针查找第一个匹配的虚拟节点下标 index
 	index := sort.Search(len(m.keys), func(i int) bool {
+		// 满足 return true 的最小下标，即最近的匹配节点 index
 		return m.keys[i] >= hash
 	})
+	// 环状 m.keys[]，故取余数
 	return m.hashMap[m.keys[index%len(m.keys)]]
 }

@@ -14,13 +14,15 @@ import (
 const defaultBasePath = "/_geecache/"
 const defaultReplicas = 50
 
+// 提供 HTTP 服务并依据具体的 Key 创建客户端从远程节点获取缓存
 type HTTPPool struct {
 	self    string
 	basePth string
 	mu      sync.Mutex
-	// peers 依据 key 选择节点
+	// peers 依据 key 选择节点, 一致性哈希的Map
 	peers *consistenhash.Map
 	// 映射远程节点与对应的 httplGetter
+	// 每个远程节点对应一个 httpGetters
 	httpGetters map[string]*httpGetter
 }
 
@@ -30,6 +32,8 @@ func NewHTTPPool(self string) *HTTPPool {
 func (p *HTTPPool) Log(format string, v ...interface{}) {
 	log.Printf("[Server %s] %s", p.self, fmt.Sprintf(format, v...))
 }
+
+// 服务端实现
 func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !strings.HasPrefix(r.URL.Path, p.basePth) {
 		panic("HTTPPool serving unexpected path: " + r.URL.Path)
@@ -59,9 +63,11 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // 客户端实现
 type httpGetter struct {
+	// 远程访问的结点地址
 	baseURL string
 }
 
+// Get() 获取远程访问结点的返回值转化为[byte]
 func (h *httpGetter) Get(group string, key string) ([]byte, error) {
 	u := fmt.Sprintf(
 		"%v%v/%v",
@@ -78,7 +84,9 @@ func (h *httpGetter) Get(group string, key string) ([]byte, error) {
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("server returned: %v", res.Status)
 	}
+
 	bytes, err := ioutil.ReadAll(res.Body)
+
 	if err != nil {
 		return nil, err
 	}
@@ -86,9 +94,11 @@ func (h *httpGetter) Get(group string, key string) ([]byte, error) {
 }
 
 // 编译时候即检查
+// 确保类型实现这个接口，没有实现则报错
 var _ PeerGetter = (*httpGetter)(nil)
 
 // 添加 HTTPPool 的节点选择功能 实现 PeerPicker 接口
+// 实例化一致性哈希算法
 func (p *HTTPPool) Set(peers ...string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -110,4 +120,3 @@ func (p *HTTPPool) PickPeer(key string) (PeerGetter, bool) {
 	}
 	return nil, false
 }
-

@@ -73,9 +73,10 @@ func (g *Group) Get(key string) (ByteView, error) {
 
 }
 
+// 使用 PickPeer()方法选择节点，若不是本地节点则使用 getFromPeer()远程获取，本机节点失败则 getLocally(key)
 func (g *Group) load(key string) (value ByteView, err error) {
 	if g.peers != nil {
-		if peer, ok := g.peers.PickerPeer(key); ok {
+		if peer, ok := g.peers.PickPeer(key); ok {
 			if value, err = g.getFromPeer(peer, key); ok {
 				return value, nil
 			}
@@ -84,6 +85,8 @@ func (g *Group) load(key string) (value ByteView, err error) {
 	}
 	return g.getLocally(key)
 }
+
+// 使用实现PeerGetter 接口的 httpGetter 访问远程节点获取缓存值
 func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
 	bytes, err := peer.Get(g.name, key)
 	if err != nil {
@@ -105,6 +108,8 @@ func (g *Group) getLocally(key string) (ByteView, error) {
 func (g *Group) populateCache(key string, value ByteView) {
 	g.mainCache.add(key, value)
 }
+
+// 将实现 PeerPicker 接口的 HTTPPool 注入Group
 func (g *Group) RegisterPeers(peers PeerPicker) {
 	if g.peers != nil {
 		panic("RegisterPeerPicker called more than once ")
