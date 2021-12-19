@@ -1,7 +1,7 @@
 package geecache
 
 import (
-	"Cache-Demo/step2-singleNode/lru"
+	"Cache-Demo/step5/geecache/lru"
 	"sync"
 )
 
@@ -30,4 +30,3 @@ func (c *cache) get(key string) (value ByteView, ok bool) {
 	}
 	return
 }
-
