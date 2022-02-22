@@ -1,2 +1,0 @@
-package goroutinepooldemo
-type 

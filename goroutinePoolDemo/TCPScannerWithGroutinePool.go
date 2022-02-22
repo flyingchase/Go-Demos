@@ -38,14 +38,3 @@ func worker(ports <-chan int, res chan<- int) {
 		res <- port
 	}
 }
-func quicksort(nums []int) {
-	if len(nums) == 0 {
-		return
-	}
-	quicksortHelper(nums, 0, len(nums))
-}
-func quicksortHelper(nums []int, l, r int) {
-	if l >= r {
-		return
-	}
-}
