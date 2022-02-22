@@ -16,7 +16,6 @@ var db = map[string]string{
 func main() {
 	geecache.NewGroup("sores", 2<<10, geecache.GetterFunc(
 		func(key string) ([]byte, error) {
-
 			log.Println("[SolwDB] search key", key)
 			if v, ok := db[key]; ok {
 				return []byte(v), nil
