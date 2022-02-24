@@ -115,7 +115,6 @@ func (p *Pool) revertWorker(worker *Worker) bool {
 	p.cond.Signal()
 	p.lock.Unlock()
 	return true
-
 }
 
 // clear expired workers periodically
