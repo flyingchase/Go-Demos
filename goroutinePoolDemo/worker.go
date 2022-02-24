@@ -1,6 +1,8 @@
 package goroutinepooldemo
 
-import "time"
+import (
+	"time"
+)
 
 type Worker struct {
 
@@ -13,5 +15,30 @@ type Worker struct {
 }
 
 func (w *Worker) run() {
+	w.pool.incRunning()
+	go func() {
 
+		defer func() {
+			if p := recover(); p != nil {
+				w.pool.decRunning()
+				w.pool.workerCache.Put(w)
+				// panic deal
+
+			}
+		}()
+
+		for f := range w.task {
+			if f == nil {
+				w.pool.decRunning()
+				w.pool.workerCache.Put(w)
+				return
+			}
+			f()
+			if ok := w.pool.revertWorker(w); !ok {
+				break
+			}
+
+		}
+
+	}()
 }

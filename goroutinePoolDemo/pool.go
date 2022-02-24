@@ -18,7 +18,6 @@ type Pool struct {
 	lock    sync.Mutex
 	// ensure releaing  to do once
 	once sync.Once
-
 	// speeds up the obtainment of the usable work in func retrieveWorker
 	workerCache sync.Pool
 	// cond for waiting idleWorker
