@@ -23,7 +23,6 @@ func (w *Worker) run() {
 				w.pool.decRunning()
 				w.pool.workerCache.Put(w)
 				// panic deal
-
 			}
 		}()
 
@@ -37,8 +36,6 @@ func (w *Worker) run() {
 			if ok := w.pool.revertWorker(w); !ok {
 				break
 			}
-
 		}
-
 	}()
 }
