@@ -33,6 +33,7 @@ func (w *Worker) run() {
 				return
 			}
 			f()
+			// 无可用 workers
 			if ok := w.pool.revertWorker(w); !ok {
 				break
 			}

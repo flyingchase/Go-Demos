@@ -21,7 +21,7 @@ type Pool struct {
 	// speeds up the obtainment of the usable work in func retrieveWorker
 	workerCache sync.Pool
 	// cond for waiting idleWorker
-	cond sync.Cond
+	cond *sync.Cond
 }
 
 func NewTimingPool(size int, expiry int) (*Pool, error) {
@@ -35,6 +35,8 @@ func NewTimingPool(size int, expiry int) (*Pool, error) {
 		capacity:       int32(size),
 		expiryDuration: time.Duration(expiry) * time.Second,
 	}
+	p.cond = sync.NewCond(&p.lock)
+	go p.periodicallyPurge()
 	return p, nil
 }
 
@@ -63,6 +65,7 @@ func (p *Pool) retrieveWorker() *Worker {
 	if n >= 0 {
 		w = idleWorkers[n]
 		// 取出闲置 worker 后将原p.workers 对应的 worker 置空
+		// 将 Pool 池中可用 workers-1
 		idleWorkers[n] = nil
 		p.workers = idleWorkers[:n]
 		p.lock.Unlock()
@@ -73,6 +76,7 @@ func (p *Pool) retrieveWorker() *Worker {
 		if cacheWork := p.workerCache.Get(); cacheWork != nil {
 			w = cacheWork.(*Worker)
 		} else {
+			// 构造新的 workers，只要没有超过 pool.cap
 			w = &Worker{
 				pool: p,
 				task: make(chan func(), 1),
@@ -81,8 +85,10 @@ func (p *Pool) retrieveWorker() *Worker {
 		w.run()
 	} else {
 		//阻塞判断
+		// pool 池中没有可用 worker且正在运行的 worker 超容
 		for {
 			p.cond.Wait()
+			// 等待一组协程满足条件
 			l := len(p.workers) - 1
 			// 出现空闲 idleWorker则取出队尾
 			if l < 0 {
@@ -111,6 +117,7 @@ func (p *Pool) revertWorker(worker *Worker) bool {
 	p.workers = append(p.workers, worker)
 
 	// retrieveWorker() stuck 时是存在可用 worker
+	// 唤醒 cond.wait 的 goroutines 避免阻塞的 worker 没有被清理
 	p.cond.Signal()
 	p.lock.Unlock()
 	return true
@@ -138,12 +145,19 @@ func (p *Pool) periodicallyPurge() {
 			w.task <- nil
 			idleWorkers[i] = nil
 		}
+		// 找到尚未失效的 workers
 		if n > -1 {
+			// 所有 workers 均失效
 			if n >= len(idleWorkers)-1 {
 				p.workers = idleWorkers[:0]
 			} else {
+				// p.workers指向尚未失效部分
 				p.workers = idleWorkers[n+1:]
 			}
+		}
+		// 没有可运行的 running 则广播唤醒所有阻塞的 workers
+		if p.Runing() == 0 {
+			p.cond.Broadcast()
 		}
 		p.lock.Unlock()
 	}
@@ -168,6 +182,7 @@ func (p *Pool) Tune(size int) {
 	}
 	atomic.StoreInt32(&p.capacity, int32(size))
 	// 将超出目新 size 的 worker 全部置空
+	// 新的 size 比原 size 小
 	diff := p.Runing() - size
 	for i := 0; i < diff; i++ {
 		p.retrieveWorker().task <- nil
@@ -177,6 +192,7 @@ func (p *Pool) Tune(size int) {
 // release close this pool
 func (p *Pool) Release() error {
 	// once
+	// p.cond.Broadcast()
 	p.once.Do(func() {
 		atomic.StoreInt32(&p.release, int32(1))
 		p.lock.Lock()
