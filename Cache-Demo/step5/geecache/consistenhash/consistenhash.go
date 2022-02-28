@@ -47,6 +47,7 @@ func (m *Map) Get(key string) string {
 		return ""
 	}
 	hash := int(m.hash([]byte(key)))
+	// 顺时针查找第一个可缓存的虚拟节点
 	index := sort.Search(len(m.keys), func(i int) bool {
 		return m.keys[i] >= hash
 	})
