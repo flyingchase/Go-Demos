@@ -1,6 +1,6 @@
-# Goroutine Pool
+# Go demo collection
 
-## 概述
+## goroutine Pool Ants
 
 将`goroutine` 池化，复用 goroutine，减轻 runtime 的调度压力
 
